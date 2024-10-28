@@ -5,9 +5,9 @@
 
 localforage.config({
   // driver      : localforage.INDEXEDDB,
-  name        : "BishBashOnce",
-  version     : 1.0,
-  storeName   : 'bishbashonce'
+  name: "BishBashOnce",
+  version: 1.0,
+  storeName: "bishbashonce",
 });
 
 const TESTMODE = true;
@@ -18,29 +18,68 @@ const maxHandSize = 8;
 const increaseHandThreshold = 1;
 const startingScore = 1;
 const discardScore = 3;
-const goodResults = ["OK","GOOD","RIGHT","NICE","WOOO","GREAT","OMG","ooOOoOOoO","!!!!!",
-  "(◕‿◕)", "(≧◡≦) ♡", "( : ౦ ‸ ౦ : )", "(^_−)☆", "ζ°)))彡", "┌(＾＾)┘"];
-const badResults = ["DOH","ARGH","NOPE","OOPS!",":-(", "NOOOO", "(ᗒᗣᗕ)՞"];
-const colours = {radical: "#41cdf4", kanji: "#f442e5", vocabulary: "#9541f4"};
+const goodResults = [
+  "OK",
+  "GOOD",
+  "RIGHT",
+  "NICE",
+  "WOOO",
+  "GREAT",
+  "OMG",
+  "ooOOoOOoO",
+  "!!!!!",
+  "(◕‿◕)",
+  "(≧◡≦) ♡",
+  "( : ౦ ‸ ౦ : )",
+  "(^_−)☆",
+  "ζ°)))彡",
+  "┌(＾＾)┘",
+];
+const badResults = ["DOH", "ARGH", "NOPE", "OOPS!", ":-(", "NOOOO", "(ᗒᗣᗕ)՞"];
+const colours = {
+  radical: "#41cdf4",
+  kanji: "#f442e5",
+  vocabulary: "#9541f4",
+  kana_vocab: "#41f4a1",
+};
 let isLoading = false;
 let apiKey = "";
 
 function levenshtein(a, b) {
-  let t = [], u, i, j, m = a.length, n = b.length;
-  if (!m) { return n; }
-  if (!n) { return m; }
-  for (j = 0; j <= n; j++) { t[j] = j; }
+  let t = [],
+    u,
+    i,
+    j,
+    m = a.length,
+    n = b.length;
+  if (!m) {
+    return n;
+  }
+  if (!n) {
+    return m;
+  }
+  for (j = 0; j <= n; j++) {
+    t[j] = j;
+  }
   for (i = 1; i <= m; i++) {
     for (u = [i], j = 1; j <= n; j++) {
-      u[j] = a[i - 1] === b[j - 1] ? t[j - 1] : Math.min(t[j - 1], t[j], u[j - 1]) + 1;
-    } t = u;
-  } return u[n];
+      u[j] =
+        a[i - 1] === b[j - 1]
+          ? t[j - 1]
+          : Math.min(t[j - 1], t[j], u[j - 1]) + 1;
+    }
+    t = u;
+  }
+  return u[n];
 }
 
 function queryStr() {
   try {
-    return _(window.location.search.substr(1)).split("&")
-      .map(x => x.split("=")).fromPairs().value();
+    return _(window.location.search.substr(1))
+      .split("&")
+      .map((x) => x.split("="))
+      .fromPairs()
+      .value();
   } catch (err) {
     return {};
   }
@@ -53,11 +92,14 @@ function clearLocal() {
 }
 
 function getLocal(dataId, cacheHours, def) {
-  return localforage.getItem(dataId).then(result => {
+  return localforage.getItem(dataId).then((result) => {
     if (!result) {
       return def || null;
     }
-    if (!cacheHours || result.timestamp + cacheHours * 60 * 60 * 1000 > Date.now()) {
+    if (
+      !cacheHours ||
+      result.timestamp + cacheHours * 60 * 60 * 1000 > Date.now()
+    ) {
       return result.data;
     } else {
       return localforage.removeItem(dataId).then(() => def || null);
@@ -66,20 +108,23 @@ function getLocal(dataId, cacheHours, def) {
 }
 
 function storeLocal(dataId, data) {
-  return localforage.setItem(dataId, {
-    timestamp: Date.now(),
-    data: data
-  }).then(d => d.data).catch( err => {
-    if (err && err.name === "QuotaExceededError") {
-      console.warn( "Exceeded quota when storing " + dataId );
-      return data;
-    }
-    throw err;
-  });
+  return localforage
+    .setItem(dataId, {
+      timestamp: Date.now(),
+      data: data,
+    })
+    .then((d) => d.data)
+    .catch((err) => {
+      if (err && err.name === "QuotaExceededError") {
+        console.warn("Exceeded quota when storing " + dataId);
+        return data;
+      }
+      throw err;
+    });
 }
 
 function usableFormData(id) {
-  const fd = new FormData(document.querySelector("#"+id));
+  const fd = new FormData(document.querySelector("#" + id));
   return _.fromPairs(Array.from(fd.entries()));
 }
 
@@ -90,24 +135,24 @@ function reloadPage() {
   window.location.reload();
 }
 
-
 function fetchWk(endpoint) {
-  if (endpoint.substr(0,4) !== "http") {
+  if (endpoint.substr(0, 4) !== "http") {
     endpoint = apiRoot + endpoint;
   }
-  return fetch(
-    endpoint,
-    {
-      headers: {
-        "Wanikani-Revision": "20170710",
-        "Authorization": "Bearer " + apiKey
-      },
-      signal,
-    }
-  ).then(res => res.json()).catch( e => {
-    if (e.name === 'AbortError') {throw e}
-    throw new Error("Error fetching " + endpoint + "\n'" + e.message + "'");
-  });
+  return fetch(endpoint, {
+    headers: {
+      "Wanikani-Revision": "20170710",
+      Authorization: "Bearer " + apiKey,
+    },
+    signal,
+  })
+    .then((res) => res.json())
+    .catch((e) => {
+      if (e.name === "AbortError") {
+        throw e;
+      }
+      throw new Error("Error fetching " + endpoint + "\n'" + e.message + "'");
+    });
 }
 
 function pullWholeCollection(endpoint) {
@@ -115,10 +160,16 @@ function pullWholeCollection(endpoint) {
   return new Promise((resolve, reject) => {
     let numItemsPulled = 0;
     let results = [];
-    const handleResult = result => {
+    const handleResult = (result) => {
       if (result.error) {
-        throw new Error("Failed to fetch " + endpoint + ", message was '" + result.code +
-          " " + result.error);
+        throw new Error(
+          "Failed to fetch " +
+            endpoint +
+            ", message was '" +
+            result.code +
+            " " +
+            result.error
+        );
       }
       results.push(result);
       numItemsPulled += result.data.length;
@@ -126,19 +177,19 @@ function pullWholeCollection(endpoint) {
         return fetchWk(result.pages.next_url).then(handleResult);
       } else {
         console.log(endpoint, performance.now() - t0);
-         return resolve(_(results).map("data").flatten().value());
+        return resolve(_(results).map("data").flatten().value());
       }
     };
     fetchWk(endpoint).then(handleResult).catch(reject);
-  } );
+  });
 }
 
 function cachedFetchAll(collectionName, cacheHours) {
-  return getLocal(collectionName, cacheHours).then(local => {
+  return getLocal(collectionName, cacheHours).then((local) => {
     if (local) {
       return Promise.resolve(local);
     }
-    return pullWholeCollection(collectionName).then( data => {
+    return pullWholeCollection(collectionName).then((data) => {
       return storeLocal(collectionName, data);
     });
   });
@@ -146,18 +197,24 @@ function cachedFetchAll(collectionName, cacheHours) {
 
 function fetchRecentlyFailed() {
   const cutoff = new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString();
-  return pullWholeCollection("reviews?updated_after=" + cutoff).then(list => {
+  return pullWholeCollection("reviews?updated_after=" + cutoff).then((list) => {
     return _(list)
-      .filter(x => x.data.incorrect_meaning_answers || x.data.incorrect_reading_answers)
+      .filter(
+        (x) =>
+          x.data.incorrect_meaning_answers || x.data.incorrect_reading_answers
+      )
       .uniqBy("data.subject_id")
       .value();
   });
 }
 
 function fetchNonGuruedRadicalsAndKanji() {
-  return pullWholeCollection("assignments?srs_stages=1,2,3,4&subject_types=radical,kanji").then(list => {
+  return pullWholeCollection(
+    "assignments?srs_stages=1,2,3,4&subject_types=radical,kanji"
+  ).then((list) => {
     const output = _(list)
-      .filter(x => x.data.passed_at === null).value()
+      .filter((x) => x.data.passed_at === null)
+      .value();
     return output;
   });
 }
@@ -167,77 +224,116 @@ function fetchAncientGurus() {
   // picked from the oldest 200
   const ageCutoff = new Date(Date.now() - 1000 * 60 * 60 * 24 * 7 * 10);
   const recentCorrectCutoff = new Date(Date.now() - 1000 * 60 * 60 * 24 * 2);
-  return pullWholeCollection("assignments?srs_stages=5,6").then(list => {
+  return pullWholeCollection("assignments?srs_stages=5,6").then((list) => {
     const output = _(list)
       .sortBy(["data.created_at"])
-      .filter(x => new Date(x.data_updated_at) < recentCorrectCutoff)
+      .filter((x) => new Date(x.data_updated_at) < recentCorrectCutoff)
       .take(200)
-      .filter(x => ageCutoff > new Date(x.data.created_at))
+      .filter((x) => ageCutoff > new Date(x.data.created_at))
       .shuffle()
-      .take(4).value();
+      .take(4)
+      .value();
     return output;
   });
 }
 
 function fetchStudyMaterials() {
-  return getLocal("customSubjects", 1/4).then(local => {
+  return getLocal("customSubjects", 1 / 4).then((local) => {
     if (local) {
       return local;
     }
-    return pullWholeCollection("study_materials").then(studyMats => {
-      const subjects = _.reduce(studyMats, (result, value) => {
-        const rn = value.data.reading_note;
-        const mn = value.data.meaning_note;
-        result[value.data.subject_id] = {
-          id: value.data.subject_id,
-          accepted_meanings: _.map(value.data.meaning_synonyms || [], x => x.toLowerCase()),
-          meaning_mnemonic: (mn ? mn + "<hr>" : "").replace("\n", "<br>"),
-          reading_mnemonic: (rn ? rn + "<hr>" : "").replace("\n", "<br>"),
-        };
-        return result;
-      }, []);
+    return pullWholeCollection("study_materials").then((studyMats) => {
+      const subjects = _.reduce(
+        studyMats,
+        (result, value) => {
+          const rn = value.data.reading_note;
+          const mn = value.data.meaning_note;
+          result[value.data.subject_id] = {
+            id: value.data.subject_id,
+            accepted_meanings: _.map(value.data.meaning_synonyms || [], (x) =>
+              x.toLowerCase()
+            ),
+            meaning_mnemonic: (mn ? mn + "<hr>" : "").replace("\n", "<br>"),
+            reading_mnemonic: (rn ? rn + "<hr>" : "").replace("\n", "<br>"),
+          };
+          return result;
+        },
+        []
+      );
       return storeLocal("customSubjects", subjects);
     });
   });
 }
 
 function fetchSubjects() {
-  return getLocal("subjects", 24 * 7).then(local => {
+  return getLocal("subjects", 24 * 7).then((local) => {
     if (local) {
       return local;
     }
-    return pullWholeCollection("subjects").then(rawSubjects => {
+    return pullWholeCollection("subjects").then((rawSubjects) => {
       // ensure it's indexed by ID, preprocess
-      let subjects = _.reduce(rawSubjects, (result, value) => {
-        if (!value.data.characters) {
-          const svgUrl = _.find(value.data.character_images,
-            x => x.content_type === "image/svg+xml" && x.metadata.inline_styles).url;
-          if (svgUrl) {
-            value.data.characters = '<div class="wkSvg"><img src="' + svgUrl + '""></div>';
+      let subjects = _.reduce(
+        rawSubjects,
+        (result, value) => {
+          if (!value.data.characters) {
+            const svgUrl = _.find(
+              value.data.character_images,
+              (x) =>
+                x.content_type === "image/svg+xml" && x.metadata.inline_styles
+            ).url;
+            if (svgUrl) {
+              value.data.characters =
+                '<div class="wkSvg"><img src="' + svgUrl + '""></div>';
+            }
           }
-        }
-        result[value.id] = {
-          id: value.id,
-          object: value.object,
-          label: value.data.characters || value.data.slug,
-          accepted_readings: _(value.data.readings).filter({accepted_answer: true}).map("reading").map(x => x.toLowerCase()).value(),
-          bad_readings: _(value.data.readings).filter({accepted_answer: false}).map("reading").value(),
-          accepted_meanings: _(value.data.meanings).filter({accepted_answer: true}).map("meaning").map(x => x.toLowerCase()).value(),
-          primary_readings: _(value.data.readings).filter({primary: true}).map("reading").join(", "),
-          primary_meanings: _(value.data.meanings).filter({primary: true}).map("meaning").join(", "),
-          level: value.data.level,
-          meaning_mnemonic: _.get(value, "data.meaning_mnemonic", "").replace("\n", "<br>"),
-          reading_mnemonic: _.get(value, "data.reading_mnemonic", "").replace("\n", "<br>"),
-          audio: _(_.get(value.data, "pronunciation_audios", []))
-            .filter({content_type: "audio/mpeg"}).map("url").value()
-        };
-        return result;
-      }, []);
+          result[value.id] = {
+            id: value.id,
+            object: value.object,
+            label: value.data.characters || value.data.slug,
+            accepted_readings: _(value.data.readings)
+              .filter({ accepted_answer: true })
+              .map("reading")
+              .map((x) => x.toLowerCase())
+              .value(),
+            bad_readings: _(value.data.readings)
+              .filter({ accepted_answer: false })
+              .map("reading")
+              .value(),
+            accepted_meanings: _(value.data.meanings)
+              .filter({ accepted_answer: true })
+              .map("meaning")
+              .map((x) => x.toLowerCase())
+              .value(),
+            primary_readings: _(value.data.readings)
+              .filter({ primary: true })
+              .map("reading")
+              .join(", "),
+            primary_meanings: _(value.data.meanings)
+              .filter({ primary: true })
+              .map("meaning")
+              .join(", "),
+            level: value.data.level,
+            meaning_mnemonic: _.get(value, "data.meaning_mnemonic", "").replace(
+              "\n",
+              "<br>"
+            ),
+            reading_mnemonic: _.get(value, "data.reading_mnemonic", "").replace(
+              "\n",
+              "<br>"
+            ),
+            audio: _(_.get(value.data, "pronunciation_audios", []))
+              .filter({ content_type: "audio/mpeg" })
+              .map("url")
+              .value(),
+          };
+          return result;
+        },
+        []
+      );
       return storeLocal("subjects", subjects);
     });
   });
 }
-
 
 function play(assignments, subjects) {
   const answerField = document.querySelector("#answer");
@@ -248,24 +344,29 @@ function play(assignments, subjects) {
   const result = document.querySelector("#result");
   const tpl = _.template(
     '<span class="label"><%= label %></span><br>' +
-    '<span class="kind" style="border-color:<%= colours[object] %>"><%= object %></span>'
+      '<span class="kind" style="border-color:<%= colours[object] %>"><%= object %></span>'
   );
-  const solTpl = _.template('<h2><%= title %></h2><%= sub.length > 1 ? "<h4>" + sub.join(", ") + "</h4>" : "" %><p><%= body %></p>');
+  const solTpl = _.template(
+    '<h2><%= title %></h2><%= sub.length > 1 ? "<h4>" + sub.join(", ") + "</h4>" : "" %><p><%= body %></p>'
+  );
 
   const PH_MEANING = 1;
   const PH_READING = 2;
 
   const now = new Date();
   const deck = [];
-  const hand = _(assignments).map(a => ({
-    score: startingScore,
-    perfect: true,
-    type: a.data.subject_type,
-    subject: subjects[a.data.subject_id],
-    availNow: new Date(a.data.available_at) <= now,
-    // Warning, some "assignments" are actually reviews
-    is_weak: (a.data.srs_stage || a.data.starting_srs_stage) === 1,
-  })).shuffle().value();
+  const hand = _(assignments)
+    .map((a) => ({
+      score: startingScore,
+      perfect: true,
+      type: a.data.subject_type,
+      subject: subjects[a.data.subject_id],
+      availNow: new Date(a.data.available_at) <= now,
+      // Warning, some "assignments" are actually reviews
+      is_weak: (a.data.srs_stage || a.data.starting_srs_stage) === 1,
+    }))
+    .shuffle()
+    .value();
   // const hand = deck.splice(0, Math.min(initialHandSize, deck.length));
   const pile = [];
   subjects = null; // free some ram
@@ -279,16 +380,23 @@ function play(assignments, subjects) {
       // catch unfinished n's etc
       answerField.value = wanakana.toKana(answerField.value);
     }
-    const card = hand[0], subj = card.subject;
+    const card = hand[0],
+      subj = card.subject;
     const answer = _.trim(answerField.value).toLowerCase();
-    if (answer === "") { return; }
-    if (TESTMODE && answer==="1" || answer==="2") {
-      if (answer === "1") {card.perfect = true;}
+    if (answer === "") {
+      return;
+    }
+    if ((TESTMODE && answer === "1") || answer === "2") {
+      if (answer === "1") {
+        card.perfect = true;
+      }
       return answer === "1" ? success() : fail();
     }
     if (phase === PH_MEANING) {
-      const found = _.find(subj.accepted_meanings,
-        m => levenshtein(m, answer) <= Math.floor(1 + m.length/5));
+      const found = _.find(
+        subj.accepted_meanings,
+        (m) => levenshtein(m, answer) <= Math.floor(1 + m.length / 5)
+      );
       return found ? success() : fail();
     } else {
       if (subj.accepted_readings.includes(answer)) {
@@ -298,10 +406,14 @@ function play(assignments, subjects) {
       }
       return fail();
     }
-  };
+  }
   function maybeAddFronDeck() {
     const lowestHandScore = _(hand).map("score").min();
-    if ((hand.length < 2 || lowestHandScore >= increaseHandThreshold) && hand.length < maxHandSize && deck.length) {
+    if (
+      (hand.length < 2 || lowestHandScore >= increaseHandThreshold) &&
+      hand.length < maxHandSize &&
+      deck.length
+    ) {
       hand.unshift(deck.pop());
     }
   }
@@ -315,15 +427,23 @@ function play(assignments, subjects) {
     result.classList.add(isCorrect ? "right" : "wrong");
   }
   function success() {
-    const card = hand[0], subj = card.subject;
+    const card = hand[0],
+      subj = card.subject;
     animateResult(true, card.score);
-    if (subj.object === "radical" || phase === PH_READING) {
-      if (curAudio) { curAudio.play(); }
+    if (
+      subj.object === "radical" ||
+      subj.object === "kana_vocabulary" ||
+      phase === PH_READING
+    ) {
+      if (curAudio) {
+        curAudio.play();
+      }
       if (hadError && card.is_weak) {
         hand.splice(1, 0, hand.shift());
       } else {
         card.score += card.perfect ? 2 : 1;
-        const enoughStillInPlay = deck.length > 0 || hand.length > initialHandSize;
+        const enoughStillInPlay =
+          deck.length > 0 || hand.length > initialHandSize;
         const allDone = _(hand).map("score").min() >= discardScore;
         if (card.score >= discardScore) {
           if (!enoughStillInPlay) {
@@ -342,8 +462,10 @@ function play(assignments, subjects) {
           }
         } else {
           // move back in hand
-          const offset = Math.floor((card.score + Math.random()/2) * (5 + Math.random()));
-          hand.splice(Math.min(hand.length-1, offset), 0, hand.shift());
+          const offset = Math.floor(
+            (card.score + Math.random() / 2) * (5 + Math.random())
+          );
+          hand.splice(Math.min(hand.length - 1, offset), 0, hand.shift());
         }
         maybeAddFronDeck();
       }
@@ -362,13 +484,24 @@ function play(assignments, subjects) {
     answerField.value = "";
   }
   function fail() {
-    const card = hand[0], subj = card.subject;
+    const card = hand[0],
+      subj = card.subject;
     animateResult(false, card.score);
     if (phase === PH_MEANING) {
-      solution.innerHTML = solTpl({title: subj.primary_meanings, sub: subj.accepted_meanings, body: subj.meaning_mnemonic});
+      solution.innerHTML = solTpl({
+        title: subj.primary_meanings,
+        sub: subj.accepted_meanings,
+        body: subj.meaning_mnemonic,
+      });
     } else {
-      if (curAudio) { curAudio.play(); };
-      solution.innerHTML = solTpl({title: subj.primary_readings, sub: subj.accepted_readings, body: subj.reading_mnemonic});
+      if (curAudio) {
+        curAudio.play();
+      }
+      solution.innerHTML = solTpl({
+        title: subj.primary_readings,
+        sub: subj.accepted_readings,
+        body: subj.reading_mnemonic,
+      });
     }
     if (!hadError) {
       card.score = Math.max(0, card.score - 1);
@@ -384,7 +517,7 @@ function play(assignments, subjects) {
     if (!card) {
       answerField.style.display = "none";
       whatToPut.style.display = "none";
-      questionDiv.innerHTML = tpl({label:"Yosh!",object:""});
+      questionDiv.innerHTML = tpl({ label: "Yosh!", object: "" });
       document.querySelector("#info").style.display = "block";
       redrawQueue();
       return;
@@ -397,22 +530,38 @@ function play(assignments, subjects) {
     answerField.style.display = "inline-block";
     whatToPut.style.display = "block";
     solution.style.display = "none";
-    curAudio = _.get(card, "subject.audio.length", 0) ? new Audio(_.sample(card.subject.audio)) : null;
+    curAudio = _.get(card, "subject.audio.length", 0)
+      ? new Audio(_.sample(card.subject.audio))
+      : null;
     redrawQueue();
     answerField.focus();
   }
   function redrawQueue() {
-    const style = score => {
-      const offset = Math.round(score / discardScore * 55);
-      return 'style="background-color: rgb(' + (255-offset) + ',' + (200+offset) + ',200);"';
+    const style = (score) => {
+      const offset = Math.round((score / discardScore) * 55);
+      return (
+        'style="background-color: rgb(' +
+        (255 - offset) +
+        "," +
+        (200 + offset) +
+        ',200);"'
+      );
     };
 
     const disp_hand = hand.slice(0, maxHandSize);
     const deck = hand.slice(maxHandSize);
 
-    queue.innerHTML = '<strong style="color:#2c2;">' + pile.length + "</strong> + " +
-      _.map(disp_hand, c => "<span " + style(c.score) + ">" + c.subject.label + "</span>").join("") +
-      ' + <strong style="color:#f22;">' + deck.length + "</strong>";
+    queue.innerHTML =
+      '<strong style="color:#2c2;">' +
+      pile.length +
+      "</strong> + " +
+      _.map(
+        disp_hand,
+        (c) => "<span " + style(c.score) + ">" + c.subject.label + "</span>"
+      ).join("") +
+      ' + <strong style="color:#f22;">' +
+      deck.length +
+      "</strong>";
   }
 
   function switchInputMode(isKana) {
@@ -423,20 +572,22 @@ function play(assignments, subjects) {
     }
     if (isKana) {
       wanakana.bind(answerField, {
-        IMEMode: true
+        IMEMode: true,
       });
     }
   }
 
-  answerField.addEventListener("keydown", ev => {
-    if (ev.keyCode !== 13) { return; }
+  answerField.addEventListener("keydown", (ev) => {
+    if (ev.keyCode !== 13) {
+      return;
+    }
     check();
   });
 
   display();
 }
 
-document.querySelector("#apiKeyForm").addEventListener("submit", e => {
+document.querySelector("#apiKeyForm").addEventListener("submit", (e) => {
   e.preventDefault();
   if (isLoading) {
     return false;
@@ -449,9 +600,10 @@ document.querySelector("#apiKeyForm").addEventListener("submit", e => {
   }
 });
 
-Promise.all([getLocal("apiKey", null, ""),
-  getLocal("content", null, "apprentice1")]).then(([_apiKey, content]) => {
-
+Promise.all([
+  getLocal("apiKey", null, ""),
+  getLocal("content", null, "apprentice1"),
+]).then(([_apiKey, content]) => {
   apiKey = _apiKey;
   if (!apiKey) {
     document.querySelector("#apiKeyForm").style.display = "block";
@@ -462,8 +614,10 @@ Promise.all([getLocal("apiKey", null, ""),
   document.querySelector("#loading").style.display = "block";
   isLoading = true;
 
-  for (const ele of document.querySelectorAll('#contentSelectorForm input[type=checkbox]')) {
-    console.log('setting', ele.name, ele.checked, content.includes(ele.name));
+  for (const ele of document.querySelectorAll(
+    "#contentSelectorForm input[type=checkbox]"
+  )) {
+    console.log("setting", ele.name, ele.checked, content.includes(ele.name));
     ele.checked = content.includes(ele.name);
   }
 
@@ -472,25 +626,25 @@ Promise.all([getLocal("apiKey", null, ""),
     // console.log('content =', content);
 
     if (content.includes("apprentice1")) {
-        const lvl = queryStr().srsLevelOverride || "1";
-        promises.push(pullWholeCollection("assignments?srs_stages=" + lvl));
+      const lvl = queryStr().srsLevelOverride || "1";
+      promises.push(pullWholeCollection("assignments?srs_stages=" + lvl));
     }
     if (content.includes("recentlyFailed")) {
-        promises.push(fetchRecentlyFailed());
+      promises.push(fetchRecentlyFailed());
     }
     if (content.includes("oldestApprentices")) {
-        promises.push(fetchNonGuruedRadicalsAndKanji());
+      promises.push(fetchNonGuruedRadicalsAndKanji());
     }
     if (content.includes("plusGurus")) {
-        promises.push(fetchAncientGurus());
+      promises.push(fetchAncientGurus());
     }
 
     // console.log('promises', promises);
     // promises.map(p => p.then(console.log));
 
-    return Promise.all(promises).then(results => {
+    return Promise.all(promises).then((results) => {
       // console.log('results', results);
-      const m = new Map;
+      const m = new Map();
       for (const list of results) {
         for (const item of list) {
           // console.log('item', item);
@@ -501,14 +655,16 @@ Promise.all([getLocal("apiKey", null, ""),
       // console.log('returning', res);
       return [...m.values()];
     });
-  }
+  };
 
-  Promise.all([selectedContent(), fetchSubjects(), fetchStudyMaterials()]).then(
-    ([assignments, subjects, sm]) => {
-      subjects.forEach(s => {
+  Promise.all([selectedContent(), fetchSubjects(), fetchStudyMaterials()])
+    .then(([assignments, subjects, sm]) => {
+      subjects.forEach((s) => {
         const extra = sm[s.id];
         if (extra) {
-          s.accepted_meanings = s.accepted_meanings.concat(extra.accepted_meanings);
+          s.accepted_meanings = s.accepted_meanings.concat(
+            extra.accepted_meanings
+          );
           s.meaning_mnemonic = extra.meaning_mnemonic + s.meaning_mnemonic;
           s.reading_mnemonic = extra.reading_mnemonic + s.reading_mnemonic;
         }
@@ -525,30 +681,34 @@ Promise.all([getLocal("apiKey", null, ""),
 
       document.querySelector("#main").style.display = "block";
       play(assignments, subjects);
-    }
-  ).catch(err => {
-    if (err.name === 'AbortError') {
-      return;
-    }
+    })
+    .catch((err) => {
+      if (err.name === "AbortError") {
+        return;
+      }
 
-    alert("Something went wrong...\n\nError was: " + err.message);
-    return clearLocal().then(() => {
-      return localforage.dropInstance();
-    }).then(reloadPage);
+      alert("Something went wrong...\n\nError was: " + err.message);
+      return clearLocal()
+        .then(() => {
+          return localforage.dropInstance();
+        })
+        .then(reloadPage);
+    });
+});
+
+document
+  .querySelector("#contentSelectorForm")
+  .addEventListener("change", (ev) => {
+    const form_data = usableFormData("contentSelectorForm");
+    console.log("form data", form_data);
+    const content = Object.keys(form_data).join(",");
+    console.log("content stored", content);
+
+    // const content = usableFormData("contentSelectorForm").content;
+    storeLocal("content", content).then(reloadPage);
   });
-});
 
-document.querySelector("#contentSelectorForm").addEventListener("change", ev => {
-  const form_data = usableFormData("contentSelectorForm");
-  console.log('form data', form_data);
-  const content = Object.keys(form_data).join(',');
-  console.log('content stored', content);
-
-  // const content = usableFormData("contentSelectorForm").content;
-  storeLocal("content", content).then(reloadPage);
-});
-
-document.querySelector("#showApiForm").addEventListener("click", ev => {
+document.querySelector("#showApiForm").addEventListener("click", (ev) => {
   document.querySelector("#apiKeyForm").style.display = "block";
   document.querySelector("#showApiForm").style.display = "none";
 });
